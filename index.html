@@ -4,128 +4,100 @@
 <meta charset="utf-8">
 <title>Transport AR – Markerless</title>
 
-<!-- A-FRAME ONLY (NO AR.JS) -->
+<!-- A-FRAME -->
 <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 
 <style>
 body {
   margin: 0;
   overflow: hidden;
-  font-family: Arial, sans-serif;
   background: black;
 }
 
-/* TOP BAR */
-#topBar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 50px;
-  background: rgba(0,0,0,0.6);
+#loading {
+  position: fixed;
+  inset: 0;
+  background: black;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 22px;
   z-index: 10;
-}
-
-/* CONTROLS */
-#controls {
-  position: absolute;
-  bottom: 20px;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  z-index: 10;
-}
-
-.nav-btn {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  border: none;
-  font-size: 28px;
-  background: rgba(30,30,30,0.85);
-  color: white;
-  cursor: pointer;
 }
 </style>
 </head>
 
 <body>
 
-<!-- UI -->
-<div id="topBar">🚍 Transport AR (Markerless)</div>
+<div id="loading">Loading 3D Models…</div>
 
-<div id="controls">
-  <button class="nav-btn" id="prev">‹</button>
-  <button class="nav-btn" id="next">›</button>
-</div>
+<a-scene
+  embedded
+  vr-mode-ui="enabled:false"
+  renderer="colorManagement:true"
+  device-orientation-permission-ui="enabled:true">
 
-<!-- A-FRAME SCENE -->
-<a-scene embedded>
-  <a-entity light="type: ambient; intensity: 1"></a-entity>
-  <a-entity light="type: directional; intensity: 0.6" position="1 2 1"></a-entity>
+  <!-- CAMERA -->
+  <a-camera position="0 1.6 0" look-controls wasd-controls></a-camera>
 
-  <!-- Camera -->
-  <a-camera position="0 1.6 0"></a-camera>
+  <!-- LIGHTS -->
+  <a-entity light="type:ambient; intensity:1"></a-entity>
+  <a-entity light="type:directional; intensity:1" position="0 5 5"></a-entity>
 
-  <!-- MODEL HOLDER -->
-  <a-entity id="holder" position="0 1.3 -3"></a-entity>
+  <!-- MODELS -->
+  <a-entity id="models" position="0 0 -3"></a-entity>
+
 </a-scene>
 
 <script>
-const modelsData = [
-  { model: "models/bus/scene.gltf", scale: 1.2 },
-  { model: "models/car/scene.gltf", scale: 0.6 },
-  { model: "models/plane/scene.gltf", scale: 1.5 },
-  { model: "models/helicopter/scene.gltf", scale: 1.5 }
+const vehicles = [
+  {
+    model: "models/car/scene.gltf",
+    scale: "0.6 0.6 0.6",
+    position: "0 0 0"
+  },
+  {
+    model: "models/bike/scene.gltf",
+    scale: "0.5 0.5 0.5",
+    position: "2 0 0"
+  },
+  {
+    model: "models/helicopter/scene.gltf",
+    scale: "0.3 0.3 0.3",
+    position: "-2 1 0"
+  },
+  {
+    model: "models/submarine/scene.gltf",
+    scale: "0.4 0.4 0.4",
+    position: "0 -1.2 0"
+  }
 ];
 
-const holder = document.getElementById("holder");
-let models = [];
-let index = 0;
+const container = document.getElementById("models");
+let loaded = 0;
 
-// Load models
-modelsData.forEach((item, i) => {
-  const entity = document.createElement("a-entity");
-  entity.setAttribute("gltf-model", item.model);
-  entity.setAttribute("scale", `${item.scale} ${item.scale} ${item.scale}`);
-  entity.setAttribute("visible", "false");
-  holder.appendChild(entity);
-  models.push(entity);
+vehicles.forEach(v => {
+  const e = document.createElement("a-entity");
+  e.setAttribute("gltf-model", v.model);
+  e.setAttribute("scale", v.scale);
+  e.setAttribute("position", v.position);
+  e.setAttribute("rotation", "0 45 0");
+
+  e.addEventListener("model-loaded", () => {
+    loaded++;
+    if (loaded === vehicles.length) {
+      document.getElementById("loading").style.display = "none";
+    }
+  });
+
+  e.addEventListener("model-error", () => {
+    console.error("Failed to load:", v.model);
+    loaded++;
+  });
+
+  container.appendChild(e);
 });
-
-// Show model
-function showModel(i) {
-  models.forEach(m => m.setAttribute("visible", "false"));
-  models[i].setAttribute("visible", "true");
-}
-
-// Initial model
-setTimeout(() => showModel(0), 1000);
-
-// Buttons
-document.getElementById("next").onclick = () => {
-  index = (index + 1) % models.length;
-  showModel(index);
-};
-
-  
-document.getElementById("prev").onclick = () => {
-  index = (index - 1 + models.length) % models.length;
-  showModel(index);
-};
-
-// Auto rotation
-AFRAME.registerComponent("spin", {
-  tick: function () {
-    this.el.object3D.rotation.y += 0.005;
-  }
-});
-holder.setAttribute("spin", "");
 </script>
 
 </body>
