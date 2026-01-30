@@ -77,12 +77,9 @@ a-scene {
 
 <script>
 const holder = document.getElementById("holder");
-const ratingStars = document.querySelectorAll(".star");
-let rating=0;
-let yaw=0, scale=2;
 
-// Load only the bus model directly
-const transport = {model:"models/bus/scene.gltf",name:"Bus",category:"western"};
+// Load a small sample model for quick loading
+const transport = {model: "https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models/2.0/Box/glTF/Box.gltf", name: "SampleBox", category: "test"};
 const entity = document.createElement("a-entity");
 entity.setAttribute("gltf-model", transport.model);
 entity.object3D.scale.set(2,2,2);
@@ -90,12 +87,13 @@ holder.appendChild(entity);
 const model = entity;
 
 model.addEventListener("model-loaded", () => {
-  // Model loaded, start auto rotation
-  showToast("Bus model loaded");
+  console.log("Model loaded successfully");
+  showToast("Model loaded");
 });
 
 // Handle rating stars
 const stars = document.querySelectorAll(".star");
+let rating=0;
 stars.forEach(s=>{
   s.onclick=()=>{
     rating=parseInt(s.dataset.s);
@@ -113,12 +111,18 @@ function updateStars(){
 AFRAME.registerComponent("spin",{
   tick:function(){
     if(true && model){ // Always auto-rotate
-      yaw+=0.002;
-      model.object3D.rotation.y=yaw;
+      this.yaw = this.yaw || 0;
+      this.yaw+=0.002;
+      model.object3D.rotation.y=this.yaw;
     }
   }
 });
 document.querySelector("a-scene").setAttribute("spin","");
+
+// Optional: toast message
+function showToast(msg){
+  alert(msg);
+}
 </script>
 
 </body>
