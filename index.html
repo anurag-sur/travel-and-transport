@@ -242,80 +242,144 @@ let loadedCount=0;
 function showToast(t){
  toast.textContent=t;
  toast.style.opacity=1;
- setTimeout(()=>toast.style.opacity=0,1200);
+ clearTimeout(showToast._hideTimer);
+ showToast._hideTimer = setTimeout(()=>toast.style.opacity=0,1800);
 }
 
 /* ---------- Preload all models + center & normalize scale ---------- */
 foods.forEach((food,i)=>{
  const m=document.createElement("a-entity");
+ // set gltf model attribute - A-Frame will load it asynchronously
  m.setAttribute("gltf-model",food.model);
- // initial approximate scale; final normalized scale set after model loads
- m.object3D.scale.set(food.scale,food.scale,food.scale);
+
+ // keep entities hidden until explicitly shown
  m.object3D.visible=false;
+
+ // store original requested scale
+ m.userData.requestedScale = (typeof food.scale === 'number' && isFinite(food.scale)) ? food.scale : 1;
+
  holder.appendChild(m);
  models.push(m);
 
- m.addEventListener("model-loaded",()=>{
-  const Box3 = THREE.Box3;
-  const Vector3 = THREE.Vector3;
+ // model-loaded event provides the loaded model via evt.detail.model
+ m.addEventListener("model-loaded", (evt) => {
+  try {
+    const loadedModel = evt && evt.detail && evt.detail.model ? evt.detail.model : m.object3D;
+    const Box3 = THREE.Box3;
+    const Vector3 = THREE.Vector3;
 
-  // compute bbox
-  const bbox = new Box3().setFromObject(m.object3D);
-  const size = bbox.getSize(new Vector3());
-  const center = bbox.getCenter(new Vector3());
+    // compute bbox from the actual loaded model
+    const bbox = new Box3().setFromObject(loadedModel);
+    const size = bbox.getSize(new Vector3());
+    const center = bbox.getCenter(new Vector3());
 
-  // Recenter: translate so center is at origin (x,z) and lowest Y sits at y=0
-  m.object3D.position.x -= center.x;
-  m.object3D.position.z -= center.z;
-  m.object3D.position.y -= bbox.min.y;
+    // Recenter entity so the model is centered on X,Z and rests on Y=0
+    // We apply this translation to the entity so that child geometry positions become correct
+    m.object3D.position.x -= center.x || 0;
+    m.object3D.position.z -= center.z || 0;
+    m.object3D.position.y -= (bbox.min && isFinite(bbox.min.y)) ? bbox.min.y : 0;
 
-  // Normalize scale to keep large models from overflowing the view
-  const targetHeight = 1.6; // desired display height in scene units (meters)
-  let currentScale = (food.scale && food.scale > 0) ? food.scale : 1;
-  const modelHeight = size.y * currentScale;
+    // Normalize scale to keep very large or very small models reasonable
+    const targetHeight = 1.6; // meters
+    let currentScale = (m.userData.requestedScale && m.userData.requestedScale > 0) ? m.userData.requestedScale : 1;
+    const modelHeight = (size && isFinite(size.y)) ? size.y * currentScale : 0;
 
-  if (modelHeight === 0 || isNaN(modelHeight)) {
-    m.userData.normalizedScale = currentScale;
-  } else if (modelHeight > targetHeight) {
-    const scaleFactor = targetHeight / modelHeight;
-    currentScale = currentScale * scaleFactor;
-    m.object3D.scale.set(currentScale, currentScale, currentScale);
-    m.userData.normalizedScale = currentScale;
-  } else {
-    m.userData.normalizedScale = currentScale;
-    m.object3D.scale.set(currentScale, currentScale, currentScale);
-  }
-
-  // optional: enable shadows on meshes
-  m.object3D.traverse(node => {
-    if (node.isMesh) {
-      node.castShadow = true;
-      node.receiveShadow = true;
+    if (!modelHeight || isNaN(modelHeight) || modelHeight === 0) {
+      // fallback: if bbox couldn't be computed, keep requested scale
+      m.userData.normalizedScale = currentScale;
+      m.object3D.scale.set(currentScale, currentScale, currentScale);
+    } else if (modelHeight > targetHeight) {
+      const scaleFactor = targetHeight / modelHeight;
+      currentScale = currentScale * scaleFactor;
+      m.object3D.scale.set(currentScale, currentScale, currentScale);
+      m.userData.normalizedScale = currentScale;
+    } else {
+      m.userData.normalizedScale = currentScale;
+      m.object3D.scale.set(currentScale, currentScale, currentScale);
     }
-  });
 
-  // Loading UI
-  loadedCount++;
-  const progress=(loadedCount/foods.length)*100;
-  loadingProgress.style.width=progress+"%";
-  loadingText.textContent=`Loading models… ${loadedCount}/${foods.length}`;
-  if(loadedCount===foods.length){
-   setTimeout(()=>{
-    loading.style.display="none";
-    showModel(0);
-    showToast("Models loaded");
-   },300);
+    // enable shadows on meshes inside the loaded model (optional)
+    loadedModel.traverse(node => {
+      if (node.isMesh) {
+        node.castShadow = true;
+        node.receiveShadow = true;
+      }
+    });
+
+    // Update loading UI
+    loadedCount++;
+    const progress=(loadedCount/foods.length)*100;
+    loadingProgress.style.width=progress+"%";
+    loadingText.textContent=`Loading models… ${loadedCount}/${foods.length}`;
+
+    // If everything finished (including any errors handled by model-error),
+    // hide the loading overlay and display the first model
+    if(loadedCount===foods.length){
+     setTimeout(()=>{
+      loading.style.display="none";
+      showModel(0);
+      showToast("Models loaded");
+     },300);
+    }
+  } catch (err) {
+    console.error("Error during model-loaded handling for", food.model, err);
+    // ensure we don't block the loading UI
+    loadedCount++;
+    loadingProgress.style.width = ((loadedCount/foods.length)*100) + "%";
+    loadingText.textContent=`Loading models… ${loadedCount}/${foods.length}`;
+    if(loadedCount===foods.length){
+     setTimeout(()=>{
+      loading.style.display="none";
+      showModel(0);
+      showToast("Models loaded (with warnings)");
+     },300);
+    }
   }
  });
-});
+
+ // Handle model load errors so the UI doesn't wait forever
+ m.addEventListener("model-error", (evt) => {
+   console.error(`Model failed to load: ${food.model}`, evt);
+   showToast(`Failed to load ${food.name}`);
+   // mark as "loaded" so progress continues
+   loadedCount++;
+   const progress=(loadedCount/foods.length)*100;
+   loadingProgress.style.width=progress+"%";
+   loadingText.textContent=`Loading models… ${loadedCount}/${foods.length}`;
+   // still set a normalizedScale fallback so showModel won't blow up
+   if (!m.userData.normalizedScale) {
+     m.userData.normalizedScale = m.userData.requestedScale || 1;
+     m.object3D.scale.set(m.userData.normalizedScale, m.userData.normalizedScale, m.userData.normalizedScale);
+   }
+   if(loadedCount===foods.length){
+     setTimeout(()=>{
+      loading.style.display="none";
+      showModel(0);
+      showToast("Models loaded (some failed)");
+     },300);
+   }
+ });
+
+}); // end foods.forEach
 
 /* ---------- Show model ---------- */
 function showModel(i){
- models.forEach((m,idx)=> m.object3D.visible=(idx===i) );
+ // hide all
+ models.forEach((m,idx)=>{
+   if (m && m.object3D) m.object3D.visible = false;
+ });
+
  const m = models[i];
- const normalized = (m && m.userData && m.userData.normalizedScale) ? m.userData.normalizedScale : foods[i].scale;
- if (m) m.object3D.scale.set(normalized, normalized, normalized);
- if (m) m.object3D.rotation.set(0,0,0);
+ if (!m) return;
+
+ // apply normalized scale if available, else use requested scale
+ const normalized = (m && m.userData && m.userData.normalizedScale) ? m.userData.normalizedScale : (m.userData.requestedScale || 1);
+ m.object3D.scale.set(normalized, normalized, normalized);
+
+ // reset rotation
+ m.object3D.rotation.set(0,0,0);
+ // make visible
+ m.object3D.visible = true;
 
  foodName.textContent = foods[i].name;
  foodPrice.textContent = `₹${foods[i].price}`;
