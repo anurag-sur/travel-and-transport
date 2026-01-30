@@ -1,103 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Transport AR – Markerless</title>
+<meta charset="UTF-8">
+<title>Transport AR (Markerless)</title>
 
 <!-- A-FRAME -->
 <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 
 <style>
-body {
-  margin: 0;
-  overflow: hidden;
-  background: black;
-}
-
-#loading {
-  position: fixed;
-  inset: 0;
-  background: black;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  z-index: 10;
-}
+  body { margin: 0; overflow: hidden; font-family: Arial; background: black; }
+  #title {
+    position: fixed;
+    top: 10px;
+    width: 100%;
+    text-align: center;
+    color: white;
+    font-size: 22px;
+    z-index: 10;
+  }
+  .nav {
+    position: fixed;
+    bottom: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 40px;
+    z-index: 10;
+  }
+  button {
+    font-size: 26px;
+    padding: 10px 20px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    cursor: pointer;
+  }
 </style>
 </head>
 
 <body>
 
-<div id="loading">Loading 3D Models…</div>
+<div id="title">🚗 Transport AR (Markerless)</div>
+
+<div class="nav">
+  <button onclick="prevModel()">⟨</button>
+  <button onclick="nextModel()">⟩</button>
+</div>
 
 <a-scene
   embedded
-  vr-mode-ui="enabled:false"
-  renderer="colorManagement:true"
-  device-orientation-permission-ui="enabled:true">
+  background="color: #000"
+  renderer="antialias: true"
+  vr-mode-ui="enabled: false">
 
   <!-- CAMERA -->
-  <a-camera position="0 1.6 0" look-controls wasd-controls></a-camera>
+  <a-camera position="0 1.6 4" look-controls></a-camera>
 
   <!-- LIGHTS -->
-  <a-entity light="type:ambient; intensity:1"></a-entity>
-  <a-entity light="type:directional; intensity:1" position="0 5 5"></a-entity>
+  <a-entity light="type: ambient; intensity: 1"></a-entity>
+  <a-entity light="type: directional; intensity: 1" position="1 3 2"></a-entity>
 
   <!-- MODELS -->
-  <a-entity id="models" position="0 0 -3"></a-entity>
+  <a-entity id="bike" visible="true"
+    gltf-model="./models/bike/scene.gltf"
+    scale="0.6 0.6 0.6"
+    position="0 0 -2"
+    rotation="0 45 0">
+  </a-entity>
+
+  <a-entity id="helicopter" visible="false"
+    gltf-model="./models/helicopter/scene.gltf"
+    scale="0.25 0.25 0.25"
+    position="0 0 -2"
+    rotation="0 45 0">
+  </a-entity>
+
+  <a-entity id="submarine" visible="false"
+    gltf-model="./models/submarine/scene.gltf"
+    scale="0.4 0.4 0.4"
+    position="0 0 -2"
+    rotation="0 45 0">
+  </a-entity>
 
 </a-scene>
 
 <script>
-const vehicles = [
-  {
-    model: "models/car/scene.gltf",
-    scale: "0.6 0.6 0.6",
-    position: "0 0 0"
-  },
-  {
-    model: "models/bike/scene.gltf",
-    scale: "0.5 0.5 0.5",
-    position: "2 0 0"
-  },
-  {
-    model: "models/helicopter/scene.gltf",
-    scale: "0.3 0.3 0.3",
-    position: "-2 1 0"
-  },
-  {
-    model: "models/submarine/scene.gltf",
-    scale: "0.4 0.4 0.4",
-    position: "0 -1.2 0"
+  const models = ["bike", "helicopter", "submarine"];
+  let current = 0;
+
+  function showModel(index) {
+    models.forEach((id, i) => {
+      document.getElementById(id).setAttribute("visible", i === index);
+    });
   }
-];
 
-const container = document.getElementById("models");
-let loaded = 0;
+  function nextModel() {
+    current = (current + 1) % models.length;
+    showModel(current);
+  }
 
-vehicles.forEach(v => {
-  const e = document.createElement("a-entity");
-  e.setAttribute("gltf-model", v.model);
-  e.setAttribute("scale", v.scale);
-  e.setAttribute("position", v.position);
-  e.setAttribute("rotation", "0 45 0");
-
-  e.addEventListener("model-loaded", () => {
-    loaded++;
-    if (loaded === vehicles.length) {
-      document.getElementById("loading").style.display = "none";
-    }
-  });
-
-  e.addEventListener("model-error", () => {
-    console.error("Failed to load:", v.model);
-    loaded++;
-  });
-
-  container.appendChild(e);
-});
+  function prevModel() {
+    current = (current - 1 + models.length) % models.length;
+    showModel(current);
+  }
 </script>
 
 </body>
