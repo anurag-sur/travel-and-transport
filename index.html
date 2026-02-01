@@ -12,8 +12,8 @@ body{
   margin:0;
   overflow:hidden;
   font-family:'Inter',sans-serif;
-  background:#0b0b0c;
-  color:white;
+  background:#f5f5f0;
+  color: #2d2d2d;
 }
 
 /* ---------- Top Bar ---------- */
@@ -534,7 +534,8 @@ body{
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  background:#0b0b0c;
+  background:#f5f5f0;
+  color: #2d2d2d;
   z-index:102;
   gap:16px;
 }
@@ -547,7 +548,7 @@ body{
 #loadingBar{
   width:200px;
   height:4px;
-  background:rgba(255,255,255,.1);
+  background:rgba(0,0,0,.1);
   border-radius:2px;
   overflow:hidden;
 }
@@ -743,7 +744,7 @@ a-scene {
   </div>
 </div>
 
-<a-scene vr-mode-ui="enabled:false" background="color: #0b0b0c">
+<a-scene vr-mode-ui="enabled:false" background="color: #f5f5f0">
   <a-entity light="type:ambient;intensity:0.8"></a-entity>
   <a-entity light="type:directional;intensity:0.4" position="1 2 1"></a-entity>
   <a-entity camera look-controls="enabled: false" position="0 0 0"></a-entity>
@@ -752,6 +753,7 @@ a-scene {
 
 <script>
 const vehicles=[
+ {model:"models/bike/scene.gltf",name:"Mountain Bike",price:299,scale:1.2,category:"land",views:3420,rating:4.3,orders:128},
  {model:"models/bus/scene.gltf",name:"City Bus",price:899,scale:1,category:"land",views:2100,rating:4.1,orders:45},
  {model:"models/car/scene.gltf",name:"Sports Car",price:2499,scale:1.2,category:"land",views:8900,rating:4.7,orders:234},
  {model:"models/cruise_ship/scene.gltf",name:"Cruise Liner",price:8999,scale:0.3,category:"water",views:5600,rating:4.9,orders:12},
