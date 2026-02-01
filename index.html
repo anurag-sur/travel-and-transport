@@ -682,7 +682,7 @@ a-scene {
 
 <div id="toast"></div>
 <div id="loading">
-  <div id="loadingText">Loading models…</div>
+  <div id="loadingText">Initializing…</div>
   <div id="loadingBar">
     <div id="loadingProgress"></div>
   </div>
@@ -758,7 +758,8 @@ const vehicles=[
  {model:"models/cruise_ship/scene.gltf",name:"Cruise Liner",price:8999,scale:0.3,category:"water",views:5600,rating:4.9,orders:12},
  {model:"models/helicopter/scene.gltf",name:"Helicopter",price:4999,scale:1.5,category:"air",views:4200,rating:4.6,orders:8},
  {model:"models/metro/scene.gltf",name:"Metro Train",price:1299,scale:0.8,category:"land",views:1800,rating:4.2,orders:67},
- {model:"models/plane/scene.gltf",name:"Airliner",price:5999,scale:0.8,category:"air",views:7600,rating:4.8,orders:156}
+ {model:"models/plane/scene.gltf",name:"Airliner",price:5999,scale:0.8,category:"air",views:7600,rating:4.8,orders:156},
+ {model:"models/submarine/scene.gltf",name:"Submarine",price:7999,scale:1,category:"water",views:3200,rating:4.5,orders:3}
 ];
 
 const holder=document.getElementById("holder");
@@ -887,7 +888,7 @@ vehicles.forEach((vehicle,i)=>{
   loadedCount++;
   const progress=(loadedCount/vehicles.length)*100;
   loadingProgress.style.width=progress+"%";
-  loadingText.textContent=`Loading models… ${loadedCount}/${vehicles.length}`;
+  loadingText.textContent=`Loaded ${vehicle.name} (${loadedCount}/${vehicles.length})`;
   if(loadedCount===vehicles.length){
    setTimeout(()=>{
     loading.style.display="none";
